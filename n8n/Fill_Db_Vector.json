@@ -1,0 +1,208 @@
+{
+    "name": "Fill Db Vector",
+    "nodes": [
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                1520,
+                144
+            ],
+            "id": "73e72045-84d2-4a80-9775-5a3cb4096134",
+            "name": "When clicking ‘Execute workflow’"
+        },
+        {
+            "parameters": {
+                "batchSize": "=153",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                1936,
+                144
+            ],
+            "id": "4d060c41-7825-4aa4-85bf-ceea81f9a4e4",
+            "name": "Loop all files",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "jsCode": "const fs = require('fs');\nconst path = require('path');\n\n// Percorso configurato nel tuo docker-compose\nconst basePath = \"/home/node/codebase\";\n\n\n// Cartelle da escludere\nconst excludeDirs = ['.git', 'node_modules', 'venv', '__pycache__'];\n\nconst fileList = [];\n\n/**\n * Funzione ricorsiva per scansionare le directory\n */\nfunction walkSync(currentPath) {\n    const items = fs.readdirSync(currentPath);\n\n    for (const item of items) {\n        const fullPath = path.join(currentPath, item);\n        const stat = fs.statSync(fullPath);\n\n        if (stat.isDirectory()) {\n            // Se è una directory e non è tra quelle escluse, entra ricorsivamente\n            if (!excludeDirs.includes(item)) {\n                walkSync(fullPath);\n            }\n        } else {\n            fileList.push({path: fullPath, name: item});\n            \n        }\n    }\n}\n\n// Avvia la scansione\ntry {\n    walkSync(basePath);\n} catch (error) {\n    // Gestione errore nel caso la cartella non esista o manchino i permessi\n    return [{ error: error }];\n}\n\nreturn fileList;"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1728,
+                144
+            ],
+            "id": "ba3fd779-23e0-475a-a693-5550525c2990",
+            "name": "Retrival files"
+        },
+        {
+            "parameters": {
+                "mode": "insert",
+                "qdrantCollection": {
+                    "__rl": true,
+                    "value": "qdrant_database",
+                    "mode": "id"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+            "typeVersion": 1.3,
+            "position": [
+                2416,
+                160
+            ],
+            "id": "38145555-1961-4c84-bb70-917fc834d10d",
+            "name": "Qdrant Vector Store",
+            "credentials": {
+                "qdrantApi": {
+                    "id": "0C4f9btJxCbAf3Gi",
+                    "name": "QdrantApi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "nomic-embed-text:latest"
+            },
+            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+            "typeVersion": 1,
+            "position": [
+                2272,
+                432
+            ],
+            "id": "094bbeb5-1878-4f96-8cb1-923533945761",
+            "name": "Embeddings Ollama",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "wunuQpPYtsUzh5DJ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "dataType": "binary",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+            "typeVersion": 1.1,
+            "position": [
+                2480,
+                432
+            ],
+            "id": "5abfd06e-82aa-484a-8fbf-f369ea7ce757",
+            "name": "Default Data Loader"
+        },
+        {
+            "parameters": {
+                "jsCode": "const fs = require('fs');\n\n// Prendi il path dal nodo precedente (il loop)\nconst filePath = $input.first().json.path;\n\ntry {\n  // Legge il file come buffer\n  const fileBuffer = fs.readFileSync(filePath);\n  \n  // Ritorna il contenuto come dato binario che n8n può processare\n  return {\n    json: {\n      file_name: $input.first().json.name,\n      file_path: filePath\n    },\n    binary: {\n      data: { // Questa deve chiamarsi 'data'\n        data: fileBuffer.toString('base64'),\n        fileName: $input.first().json.name,\n        fileExtension: filePath.split('.').pop(),\n        mimeType: 'text/plain' // Aiuta il Data Loader a capire che è testo\n      }\n    }\n  };\n} catch (error) {\n  return { json: { error: error, path: filePath } };\n}"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2176,
+                160
+            ],
+            "id": "e77c1fa3-340f-4b3c-bb5d-1c699586d0e1",
+            "name": "Get binary file"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "When clicking ‘Execute workflow’": {
+            "main": [
+                [
+                    {
+                        "node": "Retrival files",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop all files": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "Get binary file",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrival files": {
+            "main": [
+                [
+                    {
+                        "node": "Loop all files",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Embeddings Ollama": {
+            "ai_embedding": [
+                [
+                    {
+                        "node": "Qdrant Vector Store",
+                        "type": "ai_embedding",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Qdrant Vector Store": {
+            "main": [
+                [
+                    {
+                        "node": "Loop all files",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Default Data Loader": {
+            "ai_document": [
+                [
+                    {
+                        "node": "Qdrant Vector Store",
+                        "type": "ai_document",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get binary file": {
+            "main": [
+                [
+                    {
+                        "node": "Qdrant Vector Store",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "62b62fd4-6326-464b-a378-ab73756c32ce",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "4c1724cdd27f98760a1224a45cc5428e4736552ed282ef53e5c97aca475bfaba"
+    },
+    "id": "9xXcmyQsb0kX8T82",
+    "tags": []
+}

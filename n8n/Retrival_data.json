@@ -1,0 +1,185 @@
+{
+    "name": "Retrival data",
+    "nodes": [
+        {
+            "parameters": {
+                "public": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+            "typeVersion": 1.4,
+            "position": [
+                0,
+                0
+            ],
+            "id": "bffcc4b7-8073-48cc-86ef-874a2121a50c",
+            "name": "When chat message received",
+            "webhookId": "3bb19313-3de0-45f0-bce4-c92c4b50cfb4"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                208,
+                0
+            ],
+            "id": "ffe1e713-93c0-40b7-baba-09d4bea48bc8",
+            "name": "AI Agent",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "model": "llama3.1:8b",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+            "typeVersion": 1,
+            "position": [
+                160,
+                240
+            ],
+            "id": "b7d39667-e2bc-4fb8-be3c-c7f2c9840370",
+            "name": "Ollama Chat Model",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "wunuQpPYtsUzh5DJ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "retrieve-as-tool",
+                "toolDescription": "Retrival data from my codebase",
+                "qdrantCollection": {
+                    "__rl": true,
+                    "value": "qdrant_database",
+                    "mode": "id"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+            "typeVersion": 1.3,
+            "position": [
+                528,
+                96
+            ],
+            "id": "ea5e5ebf-577d-40b6-b2ca-9da54a0db85d",
+            "name": "Qdrant Vector Store",
+            "credentials": {
+                "qdrantApi": {
+                    "id": "0C4f9btJxCbAf3Gi",
+                    "name": "QdrantApi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "nomic-embed-text:latest"
+            },
+            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+            "typeVersion": 1,
+            "position": [
+                624,
+                224
+            ],
+            "id": "715f2523-b292-468a-b070-721d89edf60a",
+            "name": "Embeddings Ollama",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "wunuQpPYtsUzh5DJ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {},
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1.3,
+            "position": [
+                352,
+                240
+            ],
+            "id": "3e00eb62-76b5-48d8-99fa-665109d7dfeb",
+            "name": "Simple Memory"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "When chat message received": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Ollama Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Qdrant Vector Store": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Embeddings Ollama": {
+            "ai_embedding": [
+                [
+                    {
+                        "node": "Qdrant Vector Store",
+                        "type": "ai_embedding",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                []
+            ]
+        },
+        "Simple Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate"
+    },
+    "versionId": "1e66d7e5-1d2b-4471-b35c-f784f43613ad",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "4c1724cdd27f98760a1224a45cc5428e4736552ed282ef53e5c97aca475bfaba"
+    },
+    "id": "qDjxHWlYHFZQxf6l",
+    "tags": []
+}
