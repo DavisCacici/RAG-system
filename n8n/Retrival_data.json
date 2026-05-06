@@ -56,7 +56,7 @@
                 "toolDescription": "Retrival data from my codebase",
                 "qdrantCollection": {
                     "__rl": true,
-                    "value": "qdrant_database",
+                    "value": "qdrant_db",
                     "mode": "id"
                 },
                 "options": {}
