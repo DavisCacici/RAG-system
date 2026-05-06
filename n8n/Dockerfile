@@ -1,29 +1,15 @@
-FROM ubuntu:22.04
+FROM node:22-alpine
 
-# Avoid prompts from apt
-ENV DEBIAN_FRONTEND=noninteractive
+# Build dependencies for native modules
+RUN apk add --no-cache python3 make g++
 
-# Install Node.js and dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg \
-    build-essential \
-    python3 \
-    ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g n8n@latest \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Increase heap and install n8n
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm install -g n8n@2.13.0 --ignore-scripts=false
 
-# Create a user to run n8n (standard: node user with UID 1000)
-RUN useradd -ms /bin/bash -u 1000 node
 
-# Create n8n directory and set permissions
+RUN addgroup -S node || true
 WORKDIR /home/node
-RUN mkdir -p /home/node/.n8n && \
-    chown -R node:node /home/node && \
-    chmod -R 755 /home/node
+RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node
 
 USER node
 
