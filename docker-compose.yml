@@ -35,10 +35,11 @@ services:
       - N8N_BLOCK_NODES_IMPORT_CHECK=true
       - N8N_FILESYSTEM_ALLOWED_PATHS=/home/node/.n8n-files
       - N8N_SECURE_COOKIE=false
+      - N8N_FILESYSTEM_ALLOWED_PATHS=/home/node/.n8n-files,/home/node/.n8n-files-orig
     volumes:
       - ./n8n/data:/home/node/.n8n
       - "${PATH_DATA}:/home/node/.n8n-files"
-      - "${PATH_DATA_ORIG}:/home/node/.n8n-files"
+      - "${PATH_DATA_ORIG}:/home/node/.n8n-files-orig"
     depends_on:
       - qdrant
 
