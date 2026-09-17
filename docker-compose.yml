@@ -1,13 +1,4 @@
 services:
-  # ollama:
-  #   build: ./ollama
-  #   container_name: rag-ollama
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ./ollama/data:/root/.ollama
-  #   environment:
-  #     - OLLAMA_VULKAN=1
 
   qdrant:
     image: qdrant/qdrant
@@ -15,18 +6,16 @@ services:
     ports:
       - "6333:6333"
     volumes:
-      - qdrant_storage:/usr/src/qdrant/storage
+      - qdrant_storage:/qdrant/storage
 
   n8n:
-    build: ./n8n
+    image: n8nio/n8n:2.13.0
     container_name: rag-n8n
     ports:
       - "5678:5678"
     env_file:
       - .env
     environment:
-      - N8N_HOST=localhost
-      - WEBHOOK_URL=http://localhost:5678/
       - NODE_FUNCTION_ALLOW_BUILTIN=*
       - NODE_FUNCTION_ALLOW_EXTERNAL=*
       - N8N_BLOCK_SVC_REGISTRATION_EMAIL=true
@@ -42,22 +31,6 @@ services:
       - "${PATH_DATA_ORIG}:/home/node/.n8n-files-orig"
     depends_on:
       - qdrant
-
-  prompt-ui:
-    build:
-      context: ./prompt-ui
-      target: dev
-    container_name: rag-prompt-ui
-    ports:
-      - "8088:8088"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
-    volumes:
-      - ./prompt-ui:/app
-      - /app/node_modules
-    depends_on:
-      - n8n
 
 volumes:
   qdrant_storage:
